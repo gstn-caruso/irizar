@@ -1,0 +1,15 @@
+language: minimal
+
+git:
+  depth: 1
+
+os:
+  - linux
+
+before_install:
+  - git clone https://github.com/Cuis-Smalltalk/Cuis-Smalltalk-Dev.git --depth=1
+  - .ci/installVm.sh
+  - .ci/installUpdates.sh
+
+script:
+  - .ci/runTests.sh
