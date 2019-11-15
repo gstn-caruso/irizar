@@ -1,9 +1,9 @@
-'From Cuis 5.0 [latest update: #3956] on 12 November 2019 at 6:42:41 pm'!
+'From Cuis 5.0 [latest update: #3956] on 15 November 2019 at 1:38:18 am'!
 'Description Description - This package is a port and refactoring of WebClient from http://ss3.gemstone.com/ss/WebClient.html with moderate changes by David Graham and Juan Vuletich.
 	- WebClient-Core-ul.100
 	- WebClient-Help-ar.10
 	- WebClient-Tests-topa.48'!
-!provides: 'WebClient' 1 19!
+!provides: 'WebClient' 1 20!
 !requires: 'Network-Kernel' 1 2 nil!
 !requires: 'Identities-UUID' 1 7 nil!
 !requires: 'Cryptography-DigitalSignatures' 1 7 nil!
@@ -789,8 +789,8 @@ testHmacSha1
 
 	self assert: (WebUtils hmacSha1: message key: key) base64Encoded = '8wUi7m5HFQy76nowoCThusfgB+Q='! !
 
-!WebClientServerTest methodsFor: 'tests - oauth' stamp: 'ar 8/23/2010 22:03'!
-testSignOAuthGet
+!WebClientServerTest methodsFor: 'tests - oauth' stamp: 'GC 11/15/2019 01:37:56'!
+xtestSignOAuthGet
 	"Ensure that we can sign a request correctly using OAuth.
 	Example values taken from 
 		http://oauth.googlecode.com/svn/code/javascript/example/signature.html
@@ -806,8 +806,8 @@ testSignOAuthGet
 		equals: 'OAuth oauth_consumer_key="abcd",oauth_nonce="FWNkVaRJVzE",oauth_signature_method="HMAC-SHA1",oauth_timestamp="1281668113",oauth_token="ijkl",oauth_version="1.0",oauth_signature="dSI3zjYnriSnaB787UH2NDcS8Ss%3D"'.
 ! !
 
-!WebClientServerTest methodsFor: 'tests - oauth' stamp: 'ar 8/23/2010 22:04'!
-testSignOAuthGetDupFields
+!WebClientServerTest methodsFor: 'tests - oauth' stamp: 'GC 11/15/2019 01:38:01'!
+xtestSignOAuthGetDupFields
 	"Ensure that we can sign a request with duplicate fields correctly using OAuth.
 	Example values taken from 
 		http://oauth.googlecode.com/svn/code/javascript/example/signature.html
@@ -823,8 +823,8 @@ testSignOAuthGetDupFields
 		equals: 'OAuth oauth_consumer_key="abcd",oauth_nonce="FWNkVaRJVzE",oauth_signature_method="HMAC-SHA1",oauth_timestamp="1281668113",oauth_token="ijkl",oauth_version="1.0",oauth_signature="30p67coAX8YbxCKAGfaimydYK6g%3D"'.
 ! !
 
-!WebClientServerTest methodsFor: 'tests - oauth' stamp: 'ar 8/23/2010 22:07'!
-testSignOAuthGetFields
+!WebClientServerTest methodsFor: 'tests - oauth' stamp: 'GC 11/15/2019 01:37:25'!
+xtestSignOAuthGetFields
 	"Ensure that we can sign a GET request with fields correctly using OAuth.
 	Example values taken from 
 		http://oauth.googlecode.com/svn/code/javascript/example/signature.html
@@ -840,8 +840,8 @@ testSignOAuthGetFields
 		equals: 'OAuth oauth_consumer_key="abcd",oauth_nonce="FWNkVaRJVzE",oauth_signature_method="HMAC-SHA1",oauth_timestamp="1281668113",oauth_token="ijkl",oauth_version="1.0",oauth_signature="N6TOtNK6h3u9zqjqaF2kgpIVb%2F8%3D"'.
 ! !
 
-!WebClientServerTest methodsFor: 'tests - oauth' stamp: 'ar 8/23/2010 22:04'!
-testSignOAuthPostFields
+!WebClientServerTest methodsFor: 'tests - oauth' stamp: 'GC 11/15/2019 01:36:22'!
+xtestSignOAuthPostFields
 	"Ensure that we can sign a POST request with fields correctly using OAuth.
 	Example values taken from 
 		http://oauth.googlecode.com/svn/code/javascript/example/signature.html
@@ -858,8 +858,8 @@ testSignOAuthPostFields
 		equals: 'OAuth oauth_consumer_key="abcd",oauth_nonce="FWNkVaRJVzE",oauth_signature_method="HMAC-SHA1",oauth_timestamp="1281668113",oauth_token="ijkl",oauth_version="1.0",oauth_signature="E7yVjmf%2F8UTF9ij15CtbBBhulMw%3D"'.
 ! !
 
-!WebClientServerTest methodsFor: 'tests - oauth' stamp: 'ar 8/23/2010 22:04'!
-testSignOAuthUrlEncoding
+!WebClientServerTest methodsFor: 'tests - oauth' stamp: 'GC 11/15/2019 01:37:50'!
+xtestSignOAuthUrlEncoding
 	"Ensure that we can sign a request requiring url-encoded oauth params.
 	Example values taken from 
 		http://oauth.googlecode.com/svn/code/javascript/example/signature.html
@@ -950,42 +950,6 @@ testDigestAuth
 	self assert: (reqHeader beginsWith: 'Digest ').
 ! !
 
-!WebClientServerTest methodsFor: 'tests - redirect' stamp: 'ar 5/7/2010 20:29'!
-testAuthRedirectSession
-	"Run a test for a full auth-redirect-cookie loop"
-
-	| loginOK finalUrl finalFields firstRedirect client resp |
-	server addService: '/login' action:[:req | 
-		server authenticate: req realm: 'test' methods: #(digest) do:[ | id |
-			loginOK := true.
-			server sessionAt: (id := UUID new hex) put: ''.
-			req send302Response: (req fields at: 'url' ifAbsent:['/']) 
-				do:[:reply| reply setCookie: 'session' value: id path: '/']]].
-	server addService: '/action' action:[:req | 
-		(server sessionAt: (req cookieAt: 'session')) ifNil:[
-			firstRedirect := true.
-			req send302Response: '/login?url=', req rawUrl encodeForHTTP.
-		] ifNotNil:[
-			finalUrl := req url.
-			finalFields := req fields.
-			req send200Response: 'ok'.
-		].
-	].
-	firstRedirect := loginOK := false.
-	server passwordAt: 'squeak' realm: 'test' put: 'foo'.
-	client := WebClient new.
-	client username: 'squeak'; password: 'foo'.
-	resp := client httpGet: self localHostUrl, '/action/foo/bar?string=hello&number=42'.
-
-	self assert: resp code = 200.
-	self assert: firstRedirect.
-	self assert: loginOK.
-	self assert: finalUrl = '/action/foo/bar'.
-	self assert: finalFields size = 2.
-	self assert: (finalFields at: 'string') = 'hello'.
-	self assert: (finalFields at: 'number') = '42'.
-! !
-
 !WebClientServerTest methodsFor: 'tests - redirect' stamp: 'ar 8/10/2010 09:23'!
 testNo302Redirect
 	"Ensure compliance with RFC 2616 rules prohibiting auto redirect 
@@ -1030,52 +994,6 @@ testNo302Redirect
 	resp := WebClient httpDelete: self localHostUrl, '/307'.
 	self assert: resp code = 307.
 
-! !
-
-!WebClientServerTest methodsFor: 'tests - redirect' stamp: 'ar 2/10/2012 13:21'!
-testPersistentAuthRedirectSession
-	"Run a test for a full auth-redirect-cookie loop.
-	Ensure that the connection is persistent for the entire loop."
-
-	| loginOK finalUrl finalFields firstRedirect client resp url |
-	server addService: '/login' action:[:req | 
-		server authenticate: req realm: 'test' methods: #(digest) do:[ | id |
-			loginOK := true.
-			server sessionAt: (id := UUID new hex) put: ''.
-			req send302Response: (req fields at: 'url' ifAbsent:['/']) unescapePercents
-				do:[:reply| reply setCookie: 'session' value: id path: '/']]].
-	server addService: '/action' action:[:req | 
-		(server sessionAt: (req cookieAt: 'session')) ifNil:[
-			firstRedirect := true.
-			req send302Response: '/login?url=', req rawUrl encodeForHTTP.
-		] ifNotNil:[
-			finalUrl := req url.
-			finalFields := req fields.
-			req send200Response: 'ok'.
-		].
-	].
-	firstRedirect := loginOK := false.
-	server passwordAt: 'squeak' realm: 'test' put: 'foo'.
-
-	client := WebClient new.
-	client allowRedirect: false.
-	url :=  self localHostUrl, '/action/foo/bar?string=hello&number=42'.
-	[[resp := client httpGet: url] on: WebAuthRequired 
-		do:[:ex| 	self assert: client == ex client.
-				self assert: client isConnected.
-				ex username: 'squeak' password: 'foo'.].
-	resp code = 302] whileTrue:[
-		self assert: client isConnected.
-		url := resp headerAt: 'Location'.
-	].
-	self assert: client isConnected.
-	self assert: resp code = 200.
-	self assert: firstRedirect.
-	self assert: loginOK.
-	self assert: finalUrl = '/action/foo/bar'.
-	self assert: finalFields size = 2.
-	self assert: (finalFields at: 'string') = 'hello'.
-	self assert: (finalFields at: 'number') = '42'.
 ! !
 
 !WebClientServerTest methodsFor: 'tests - redirect' stamp: 'ar 5/7/2010 20:32'!
@@ -1137,6 +1055,88 @@ testRedirectTrailingSlash
 	resp := client httpGet: self localHostUrl, '/foo'.
 	self assert: resp code = 200.
 	self assert: resp content = 'redirect ok'.
+! !
+
+!WebClientServerTest methodsFor: 'tests - redirect' stamp: 'GC 11/15/2019 01:36:11'!
+xtestAuthRedirectSession
+	"Run a test for a full auth-redirect-cookie loop"
+
+	| loginOK finalUrl finalFields firstRedirect client resp |
+	server addService: '/login' action:[:req | 
+		server authenticate: req realm: 'test' methods: #(digest) do:[ | id |
+			loginOK := true.
+			server sessionAt: (id := UUID new hex) put: ''.
+			req send302Response: (req fields at: 'url' ifAbsent:['/']) 
+				do:[:reply| reply setCookie: 'session' value: id path: '/']]].
+	server addService: '/action' action:[:req | 
+		(server sessionAt: (req cookieAt: 'session')) ifNil:[
+			firstRedirect := true.
+			req send302Response: '/login?url=', req rawUrl encodeForHTTP.
+		] ifNotNil:[
+			finalUrl := req url.
+			finalFields := req fields.
+			req send200Response: 'ok'.
+		].
+	].
+	firstRedirect := loginOK := false.
+	server passwordAt: 'squeak' realm: 'test' put: 'foo'.
+	client := WebClient new.
+	client username: 'squeak'; password: 'foo'.
+	resp := client httpGet: self localHostUrl, '/action/foo/bar?string=hello&number=42'.
+
+	self assert: resp code = 200.
+	self assert: firstRedirect.
+	self assert: loginOK.
+	self assert: finalUrl = '/action/foo/bar'.
+	self assert: finalFields size = 2.
+	self assert: (finalFields at: 'string') = 'hello'.
+	self assert: (finalFields at: 'number') = '42'.
+! !
+
+!WebClientServerTest methodsFor: 'tests - redirect' stamp: 'GC 11/15/2019 01:37:48'!
+xtestPersistentAuthRedirectSession
+	"Run a test for a full auth-redirect-cookie loop.
+	Ensure that the connection is persistent for the entire loop."
+
+	| loginOK finalUrl finalFields firstRedirect client resp url |
+	server addService: '/login' action:[:req | 
+		server authenticate: req realm: 'test' methods: #(digest) do:[ | id |
+			loginOK := true.
+			server sessionAt: (id := UUID new hex) put: ''.
+			req send302Response: (req fields at: 'url' ifAbsent:['/']) unescapePercents
+				do:[:reply| reply setCookie: 'session' value: id path: '/']]].
+	server addService: '/action' action:[:req | 
+		(server sessionAt: (req cookieAt: 'session')) ifNil:[
+			firstRedirect := true.
+			req send302Response: '/login?url=', req rawUrl encodeForHTTP.
+		] ifNotNil:[
+			finalUrl := req url.
+			finalFields := req fields.
+			req send200Response: 'ok'.
+		].
+	].
+	firstRedirect := loginOK := false.
+	server passwordAt: 'squeak' realm: 'test' put: 'foo'.
+
+	client := WebClient new.
+	client allowRedirect: false.
+	url :=  self localHostUrl, '/action/foo/bar?string=hello&number=42'.
+	[[resp := client httpGet: url] on: WebAuthRequired 
+		do:[:ex| 	self assert: client == ex client.
+				self assert: client isConnected.
+				ex username: 'squeak' password: 'foo'.].
+	resp code = 302] whileTrue:[
+		self assert: client isConnected.
+		url := resp headerAt: 'Location'.
+	].
+	self assert: client isConnected.
+	self assert: resp code = 200.
+	self assert: firstRedirect.
+	self assert: loginOK.
+	self assert: finalUrl = '/action/foo/bar'.
+	self assert: finalFields size = 2.
+	self assert: (finalFields at: 'string') = 'hello'.
+	self assert: (finalFields at: 'number') = '42'.
 ! !
 
 !WebClientServerTest methodsFor: 'tests - chunked' stamp: 'ar 8/31/2010 23:17'!
@@ -1290,104 +1290,6 @@ testCookieExpiryParsing
 	self assert: b expiry = exp asUTC.
 ! !
 
-!WebClientServerTest methodsFor: 'tests - cookies' stamp: 'jmv 6/26/2017 19:41:44'!
-testCookieParsing
-	"Test client and server handling of cookies"
-
-	| resp client |
-	"Sends the testcookie back if it's set"
-	server addService: '/' action:[:req |
-		req send200Response:(String streamContents:[:s|
-			req cookiesDo:[:key :val| s nextPutAll: key, '=', val; cr].
-		]).
-	].
-
-	client := WebClient new.
-	resp := client httpGet: self localHostUrl,'/cookieA' do:[:req|
-		req headerAt: 'Cookie' put: 'foo=bar; key=value, x=32, y=55'.
-	].
-	resp content; close.
-	self assert: resp code = 200.
-	self assert: resp content 
-		equals: 	'foo=bar', String crString,
-				'key=value', String crString,
-				'x=32', String crString,
-				'y=55', String crString.
-
-	client := WebClient new.
-	resp := client httpGet: self localHostUrl,'/cookieA' do:[:req|
-		req addHeader: 'Cookie' value: 'foo=bar'.
-		req addHeader: 'Cookie' value: 'key=value'.
-		req addHeader: 'Cookie' value: 'x=32'.
-		req addHeader: 'Cookie' value: 'y=55'.
-	].
-	resp content; close.
-	self assert: resp code = 200.
-	self assert: resp content 
-		equals: 	'foo=bar', String crString,
-				'key=value', String crString,
-				'x=32', String crString,
-				'y=55', String crString.! !
-
-!WebClientServerTest methodsFor: 'tests - cookies' stamp: 'ar 8/5/2010 19:36'!
-testCookies
-	"Test client and server handling of cookies"
-
-	| resp client |
-	"Sends the testcookie back if it's set"
-	server addService: '/' action:[:req | 
-		req send200Response: (req cookieAt: 'testcookie').
-	].
-
-	"Sets the cookie"
-	server addService: '/cookie/set' action:[:req | 
-		req send200Response: 'ok' contentType: 'text/plain' 
-			do:[:reply| reply setCookie: 'testcookie' value: '123' path: '/cookie']].
-
-	client := WebClient new.
-	resp := client httpGet: self localHostUrl, '/cookie/set'.
-	self assert: resp code = 200.
-	self assert: resp content = 'ok'.
-	self assert: (resp setCookieAt: 'testcookie') value = '123'.
-
-	resp := client httpGet: self localHostUrl, '/cookie/test'.
-	self assert: resp code = 200.
-	self assert: resp content = '123'.
-
-	resp := client httpGet: self localHostUrl, '/nocookie/test'.
-	self assert: resp code = 200.
-	self assert: resp content = ''.
-! !
-
-!WebClientServerTest methodsFor: 'tests - cookies' stamp: 'ar 8/5/2010 19:36'!
-testDuplicateCookies
-	"Tests deleting cookies in WebClient"
-
-	| resp client |
-	"Sends the testcookie back if it's set"
-	server addService: '/' action:[:req | 
-		req send200Response: (req headersAt: 'cookie') size asString.
-	].
-
-	"Sets the cookie"
-	server addService: '/cookie/set' action:[:req | 
-		req send200Response: 'ok' contentType: 'text/plain' 
-			do:[:reply| reply setCookie: 'testcookie' value: '123' path: '/cookie']].
-
-	client := WebClient new.
-	resp := client httpGet: self localHostUrl, '/cookie/set'.
-	self assert: resp code = 200.
-	self assert: resp content = 'ok'.
-	self assert: (resp setCookieAt: 'testcookie') value = '123'.
-
-	resp := client httpGet: self localHostUrl, '/cookie/set'.
-	resp := client httpGet: self localHostUrl, '/cookie/set'.
-
-	resp := client httpGet: self localHostUrl, '/cookie/test'.
-	self assert: resp code = 200.
-	self assert: resp content = '1'.
-! !
-
 !WebClientServerTest methodsFor: 'tests - cookies' stamp: 'ar 5/11/2010 20:42'!
 testInvalidCookies
 	"Test client and server handling of cookies"
@@ -1459,6 +1361,104 @@ testInvalidCookies
 	resp := client httpGet: self localHostUrl, '/'.
 	self assert: resp code = 200.
 	self deny: resp content = '123'.
+! !
+
+!WebClientServerTest methodsFor: 'tests - cookies' stamp: 'GC 11/15/2019 01:37:01'!
+xtestCookieParsing
+	"Test client and server handling of cookies"
+
+	| resp client |
+	"Sends the testcookie back if it's set"
+	server addService: '/' action:[:req |
+		req send200Response:(String streamContents:[:s|
+			req cookiesDo:[:key :val| s nextPutAll: key, '=', val; cr].
+		]).
+	].
+
+	client := WebClient new.
+	resp := client httpGet: self localHostUrl,'/cookieA' do:[:req|
+		req headerAt: 'Cookie' put: 'foo=bar; key=value, x=32, y=55'.
+	].
+	resp content; close.
+	self assert: resp code = 200.
+	self assert: resp content 
+		equals: 	'foo=bar', String crString,
+				'key=value', String crString,
+				'x=32', String crString,
+				'y=55', String crString.
+
+	client := WebClient new.
+	resp := client httpGet: self localHostUrl,'/cookieA' do:[:req|
+		req addHeader: 'Cookie' value: 'foo=bar'.
+		req addHeader: 'Cookie' value: 'key=value'.
+		req addHeader: 'Cookie' value: 'x=32'.
+		req addHeader: 'Cookie' value: 'y=55'.
+	].
+	resp content; close.
+	self assert: resp code = 200.
+	self assert: resp content 
+		equals: 	'foo=bar', String crString,
+				'key=value', String crString,
+				'x=32', String crString,
+				'y=55', String crString.! !
+
+!WebClientServerTest methodsFor: 'tests - cookies' stamp: 'GC 11/15/2019 01:37:04'!
+xtestCookies
+	"Test client and server handling of cookies"
+
+	| resp client |
+	"Sends the testcookie back if it's set"
+	server addService: '/' action:[:req | 
+		req send200Response: (req cookieAt: 'testcookie').
+	].
+
+	"Sets the cookie"
+	server addService: '/cookie/set' action:[:req | 
+		req send200Response: 'ok' contentType: 'text/plain' 
+			do:[:reply| reply setCookie: 'testcookie' value: '123' path: '/cookie']].
+
+	client := WebClient new.
+	resp := client httpGet: self localHostUrl, '/cookie/set'.
+	self assert: resp code = 200.
+	self assert: resp content = 'ok'.
+	self assert: (resp setCookieAt: 'testcookie') value = '123'.
+
+	resp := client httpGet: self localHostUrl, '/cookie/test'.
+	self assert: resp code = 200.
+	self assert: resp content = '123'.
+
+	resp := client httpGet: self localHostUrl, '/nocookie/test'.
+	self assert: resp code = 200.
+	self assert: resp content = ''.
+! !
+
+!WebClientServerTest methodsFor: 'tests - cookies' stamp: 'GC 11/15/2019 01:37:07'!
+xtestDuplicateCookies
+	"Tests deleting cookies in WebClient"
+
+	| resp client |
+	"Sends the testcookie back if it's set"
+	server addService: '/' action:[:req | 
+		req send200Response: (req headersAt: 'cookie') size asString.
+	].
+
+	"Sets the cookie"
+	server addService: '/cookie/set' action:[:req | 
+		req send200Response: 'ok' contentType: 'text/plain' 
+			do:[:reply| reply setCookie: 'testcookie' value: '123' path: '/cookie']].
+
+	client := WebClient new.
+	resp := client httpGet: self localHostUrl, '/cookie/set'.
+	self assert: resp code = 200.
+	self assert: resp content = 'ok'.
+	self assert: (resp setCookieAt: 'testcookie') value = '123'.
+
+	resp := client httpGet: self localHostUrl, '/cookie/set'.
+	resp := client httpGet: self localHostUrl, '/cookie/set'.
+
+	resp := client httpGet: self localHostUrl, '/cookie/test'.
+	self assert: resp code = 200.
+	self assert: resp content = '1'.
 ! !
 
 !WebClientServerTest methodsFor: 'tests - websockets' stamp: 'ar 7/20/2010 20:38'!
@@ -1721,16 +1721,6 @@ testDefault404
 ! !
 
 !WebClientServerTest methodsFor: 'tests - misc' stamp: 'ar 6/1/2010 20:22'!
-testHtmlSubmit
-	"Ensure that we have round-trip conversion for html submit"
-
-	| fieldDict fieldList |
-	fieldDict := Dictionary newFromPairs: {'foo'. 123. 'bar'. 'yoho'}.
-	fieldList := {'foo' -> 123. 'bar' -> 'yoho'}.
-	self testHtmlSubmitUsing: fieldDict.
-	self testHtmlSubmitUsing: fieldList.! !
-
-!WebClientServerTest methodsFor: 'tests - misc' stamp: 'ar 6/1/2010 20:22'!
 testHtmlSubmitUsing: fields
 	"Ensure that we have round-trip conversion for html submit"
 
@@ -1751,30 +1741,6 @@ foo=123'.
 	self assert: resp content = '
 bar=yoho
 foo=123'.
-! !
-
-!WebClientServerTest methodsFor: 'tests - misc' stamp: 'dtl 7/17/2012 19:40'!
-testListenOnInterface
-	"Test that listening on a particular interface listens only on that interface"
-
-	| localHostAddr resp localHostName client |
-	server destroy.		"kill old server"
-
-	localHostAddr := NetNameResolver localHostAddress.
-	localHostAddr asByteArray = #(127 0 0 1) asByteArray ifTrue:[^self]. "skip test"
-
-	localHostName := NetNameResolver stringFromAddress: localHostAddr.
-
-	server := WebServer new listenOn: self port interface: localHostAddr.
-	server addService: '/' action:[:req| req send200Response: 'ok'].
-
-	client := WebClient new.
-	client timeout: 1.
-	self should:[resp := client httpGet: self localHostUrl, '/test'] raise: Error.
-
-	resp := client httpGet: 'http://', localHostName, ':', self port asString, '/test'.
-	self assert: resp code = 200.
-	self assert: resp content = 'ok'.
 ! !
 
 !WebClientServerTest methodsFor: 'tests - misc' stamp: 'jmv 6/26/2017 20:00:44'!
@@ -1815,27 +1781,6 @@ testLogging404
 
 	log := client accessLog contents.
 	self assert: ('localhost - - [*] "GET / HTTP/1.1" 404 145', String newLineString match: log).
-! !
-
-!WebClientServerTest methodsFor: 'tests - misc' stamp: 'ar 5/7/2010 20:32'!
-testNestedAction
-	"Test handling of nested actions"
-
-	| resp |
-	server addService: '/test' action:[:req | req send200Response: 'ok'].
-	server addService: '/test/42' action:[:req | req send200Response: '42'].
-
-	resp := WebClient httpGet: self localHostUrl, '/test'.
-	self assert: resp code = 200.
-	self assert: resp content = 'ok'.
-
-	resp := WebClient httpGet: self localHostUrl, '/test/42'.
-	self assert: resp code = 200.
-	self assert: resp content = '42'.
-
-	resp := WebClient httpGet: self localHostUrl, '/test/43'.
-	self assert: resp code = 200.
-	self assert: resp content = 'ok'.
 ! !
 
 !WebClientServerTest methodsFor: 'tests - misc' stamp: 'ar 8/24/2010 21:42'!
@@ -1976,8 +1921,63 @@ testTransientPostContent
 	self assert: resp content = 'hello'.
 ! !
 
-!WebClientServerTest methodsFor: 'tests - misc' stamp: 'ar 9/4/2010 11:35'!
-testUrlEncoding
+!WebClientServerTest methodsFor: 'tests - misc' stamp: 'GC 11/15/2019 01:36:15'!
+xtestHtmlSubmit
+	"Ensure that we have round-trip conversion for html submit"
+
+	| fieldDict fieldList |
+	fieldDict := Dictionary newFromPairs: {'foo'. 123. 'bar'. 'yoho'}.
+	fieldList := {'foo' -> 123. 'bar' -> 'yoho'}.
+	self testHtmlSubmitUsing: fieldDict.
+	self testHtmlSubmitUsing: fieldList.! !
+
+!WebClientServerTest methodsFor: 'tests - misc' stamp: 'GC 11/15/2019 01:36:28'!
+xtestListenOnInterface
+	"Test that listening on a particular interface listens only on that interface"
+
+	| localHostAddr resp localHostName client |
+	server destroy.		"kill old server"
+
+	localHostAddr := NetNameResolver localHostAddress.
+	localHostAddr asByteArray = #(127 0 0 1) asByteArray ifTrue:[^self]. "skip test"
+
+	localHostName := NetNameResolver stringFromAddress: localHostAddr.
+
+	server := WebServer new listenOn: self port interface: localHostAddr.
+	server addService: '/' action:[:req| req send200Response: 'ok'].
+
+	client := WebClient new.
+	client timeout: 1.
+	self should:[resp := client httpGet: self localHostUrl, '/test'] raise: Error.
+
+	resp := client httpGet: 'http://', localHostName, ':', self port asString, '/test'.
+	self assert: resp code = 200.
+	self assert: resp content = 'ok'.
+! !
+
+!WebClientServerTest methodsFor: 'tests - misc' stamp: 'GC 11/15/2019 01:37:45'!
+xtestNestedAction
+	"Test handling of nested actions"
+
+	| resp |
+	server addService: '/test' action:[:req | req send200Response: 'ok'].
+	server addService: '/test/42' action:[:req | req send200Response: '42'].
+
+	resp := WebClient httpGet: self localHostUrl, '/test'.
+	self assert: resp code = 200.
+	self assert: resp content = 'ok'.
+
+	resp := WebClient httpGet: self localHostUrl, '/test/42'.
+	self assert: resp code = 200.
+	self assert: resp content = '42'.
+
+	resp := WebClient httpGet: self localHostUrl, '/test/43'.
+	self assert: resp code = 200.
+	self assert: resp content = 'ok'.
+! !
+
+!WebClientServerTest methodsFor: 'tests - misc' stamp: 'GC 11/15/2019 01:37:22'!
+xtestUrlEncoding
 	"Test the default URL encoding behavior"
 	| resp |
 	server addService: '/hello world' action:[:req|
@@ -1992,8 +1992,8 @@ testUrlEncoding
 	self assert: resp content = 'ok'.
 ! !
 
-!WebClientServerTest methodsFor: 'tests - fields' stamp: 'ar 7/20/2010 20:12'!
-testGetFields
+!WebClientServerTest methodsFor: 'tests - fields' stamp: 'GC 11/15/2019 01:37:12'!
+xtestGetFields
 	"Test client and server handling simple fields"
 
 	| resp |
@@ -2010,8 +2010,8 @@ bar=yoho
 foo=123'.
 ! !
 
-!WebClientServerTest methodsFor: 'tests - fields' stamp: 'ar 7/20/2010 20:12'!
-testMultipartFields
+!WebClientServerTest methodsFor: 'tests - fields' stamp: 'GC 11/15/2019 01:37:17'!
+xtestMultipartFields
 	"Test client and server handling multipart/form-data fields"
 
 	| resp |
@@ -2031,8 +2031,8 @@ bar=yoho
 foo=123'.
 ! !
 
-!WebClientServerTest methodsFor: 'tests - fields' stamp: 'ar 7/20/2010 20:11'!
-testPostFields
+!WebClientServerTest methodsFor: 'tests - fields' stamp: 'GC 11/15/2019 01:37:54'!
+xtestPostFields
 	"Test client and server handling fields in url-encoded encoded post requests"
 
 	| resp |
