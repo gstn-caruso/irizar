@@ -9,7 +9,7 @@ Irizar is a Cuis web framework build on top of WebClient which allows to define 
 
 This is a work in progress, so feel free to fork and open a PR!
 
-## How to install
+## Getting started
 
 1. You would need a [https://github.com/Cuis-Smalltalk/Cuis-Smalltalk-Dev](Cuis smalltalk image).
 2. Once it is running, you just drag and drop the `Irizar.pck.st` file into Cuis.
