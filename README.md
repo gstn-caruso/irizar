@@ -14,4 +14,10 @@ This is a work in progress, so feel free to fork and open a PR!
 1. You would need a [Cuis smalltalk image](https://github.com/Cuis-Smalltalk/Cuis-Smalltalk-Dev).
 2. Once it is running, you just drag and drop the `Irizar.pck.st` file into Cuis.
 3. Open a Workspace and just run `IrizarWebServer instance listenOn: 8080`
-4. Register a route: `IrizarWebServer instance request send200Response: '{ "hello": "world" }' contentType: 'application/json'`
+4. Register a route:
+```Smalltalk
+IrizarWebServer instance 
+	handle: '/smalltalks' 
+	verb: #GET 
+	with: [ :request | request send200Response: '{ "hello": "Smalltalks" }' contentType: 'application/json' ]
+```
