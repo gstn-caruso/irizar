@@ -1,6 +1,6 @@
-'From Cuis 5.0 [latest update: #3956] on 15 November 2019 at 10:44:02 am'!
+'From Cuis 5.0 [latest update: #3956] on 15 November 2019 at 11:52:14 am'!
 'Description '!
-!provides: 'Irizar' 1 2!
+!provides: 'Irizar' 1 3!
 !requires: 'WebClient' 1 19 nil!
 SystemOrganization addCategory: #'Irizar-Tests'!
 SystemOrganization addCategory: #'Irizar-Core'!
@@ -102,6 +102,20 @@ router
 setUp
 
 	router _ Router new! !
+
+!RouterTest methodsFor: 'tests' stamp: 'GC 11/15/2019 11:52:08'!
+testRouterHandlesPostRequestOnhandlePostMessage
+	| postRequest handledRequests |
+	
+	handledRequests _ OrderedCollection new.
+	postRequest _ TestWebRequest to: self homePath httpVerb: #POST.
+		
+	self router handlePost: self homePath with: [ :aRequest | handledRequests add: aRequest ].
+	
+	self router route: postRequest.
+	
+	self assert: (handledRequests hasEqualElements: { postRequest })
+	! !
 
 !RouterTest methodsFor: 'tests' stamp: 'GC 11/12/2019 19:16:26'!
 testWhenThereAreManyRoutesWithSamePathItHandlesTheOneWhichMatchesThatHttpVerb
@@ -240,6 +254,10 @@ route: aRequest
 		ifFound: [ :routingRule | routingRule route: aRequest ]
 		ifNone: [ RouteNotFound for: aRequest :: signal ]
 ! !
+
+!Router methodsFor: 'as yet unclassified' stamp: 'GC 11/15/2019 11:51:21'!
+handlePost: aPath with: anAction 
+	self handle: aPath verb: #POST with: anAction ! !
 
 !RoutingRule methodsFor: 'accessing' stamp: 'GC 11/9/2019 22:38:35'!
 route: aRequest
