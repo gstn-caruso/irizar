@@ -1,7 +1,7 @@
 'From Cuis 5.0 [latest update: #3956] on 12 November 2019 at 12:45:27 am'!
 'Description '!
 !provides: 'Irizar' 1 0!
-!requires: 'WebClient' 1 18 nil!
+!requires: 'WebClient' 1 19 nil!
 SystemOrganization addCategory: #'Irizar-Tests'!
 SystemOrganization addCategory: #'Irizar-Core'!
 SystemOrganization addCategory: #'Irizar-Core-Errors'!
