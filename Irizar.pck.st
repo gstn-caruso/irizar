@@ -1,6 +1,6 @@
-'From Cuis 5.0 [latest update: #3956] on 12 November 2019 at 12:45:27 am'!
+'From Cuis 5.0 [latest update: #3956] on 15 November 2019 at 10:44:02 am'!
 'Description '!
-!provides: 'Irizar' 1 0!
+!provides: 'Irizar' 1 2!
 !requires: 'WebClient' 1 19 nil!
 SystemOrganization addCategory: #'Irizar-Tests'!
 SystemOrganization addCategory: #'Irizar-Core'!
@@ -19,7 +19,7 @@ RouteNotFound class
 
 !classDefinition: #RouterTest category: #'Irizar-Tests'!
 TestCase subclass: #RouterTest
-	instanceVariableNames: 'port server'
+	instanceVariableNames: 'port server router'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Irizar-Tests'!
@@ -35,7 +35,7 @@ WebServer subclass: #IrizarWebServer
 	category: 'Irizar-Core'!
 !classDefinition: 'IrizarWebServer class' category: #'Irizar-Core'!
 IrizarWebServer class
-	instanceVariableNames: ''!
+	instanceVariableNames: 'instance'!
 
 !classDefinition: #TestWebRequest category: #'Irizar-Tests'!
 Object subclass: #TestWebRequest
@@ -68,43 +68,78 @@ RoutingRule class
 	instanceVariableNames: ''!
 
 
+!TestWebRequest methodsFor: 'accessing' stamp: 'GC 11/12/2019 19:21:34'!
+printOn: aStream
+
+	aStream nextPutAll: ('{1} {2} {3}' format: { self className . self method . self rawUrl })! !
+
+!RoutingRule methodsFor: 'testing' stamp: 'GC 11/12/2019 18:57:42'!
+printOn: aStream
+
+	aStream nextPutAll: self className, ' (', httpVerb, ' ', path, ')'! !
+
 !RouteNotFound class methodsFor: 'as yet unclassified' stamp: 'GC 11/11/2019 02:33:15'!
 for: aRequest
 
 	^ self new messageText: ('Route not found for {1} {2}' format: { aRequest method . aRequest rawUrl })! !
 
-!RouterTest methodsFor: 'tests' stamp: 'GC 11/11/2019 02:08:07'!
-testWhenThereAreNoRoutingRuleForARequestItFailsWith404
-	| requestToUnexistantRoute router |
+!RouterTest methodsFor: 'tests' stamp: 'GC 11/12/2019 19:16:02'!
+getRequest
+
+	^ TestWebRequest to: self homePath! !
+
+!RouterTest methodsFor: 'tests' stamp: 'GC 11/12/2019 19:14:20'!
+homePath
+
+	^ '/home'! !
+
+!RouterTest methodsFor: 'tests' stamp: 'GC 11/12/2019 19:19:23'!
+router
+
+	^ router! !
+
+!RouterTest methodsFor: 'tests' stamp: 'GC 11/12/2019 19:19:15'!
+setUp
+
+	router _ Router new! !
+
+!RouterTest methodsFor: 'tests' stamp: 'GC 11/12/2019 19:16:26'!
+testWhenThereAreManyRoutesWithSamePathItHandlesTheOneWhichMatchesThatHttpVerb
+	| postRequest handledRequests |
 	
-	router _ Router new.
+	handledRequests _ OrderedCollection new.
+	postRequest _ TestWebRequest to: self homePath httpVerb: #POST.
+		
+	self router handle: self homePath verb: #GET with: [ :aRequest | handledRequests add: aRequest ].
+	self router handle: self homePath verb: #POST with: [ :aRequest | handledRequests add: aRequest ].
+	
+	self router route: postRequest.
+	
+	self assert: (handledRequests hasEqualElements: { postRequest })! !
+
+!RouterTest methodsFor: 'tests' stamp: 'GC 11/12/2019 19:16:43'!
+testWhenThereAreNoRoutingRuleForARequestItFailsWith404
+	| requestToUnexistantRoute |
+	
 	requestToUnexistantRoute _ TestWebRequest to: 'unexistant url'.
 	
-	self should: [ router route: requestToUnexistantRoute ] raise: RouteNotFound! !
+	self should: [ self router route: requestToUnexistantRoute ] raise: RouteNotFound! !
 
-!RouterTest methodsFor: 'tests' stamp: 'GC 11/11/2019 02:23:05'!
+!RouterTest methodsFor: 'tests' stamp: 'GC 11/12/2019 19:17:06'!
 testWhenThereAreNoRoutingRuleForARequestWithCertainHttpVerbItFailsWith404
-	| getRequest router |
-	
-	router _ Router new.
-	getRequest _ TestWebRequest to: '/home_page'.
-		
-	router handle: '/home_page' verb: #POST with: [ :aRequest | ].
 
-	
-	self should: [ router route: getRequest ] raise: RouteNotFound! !
+	self router handle: self homePath verb: #POST with: [ :aRequest | ].
 
-!RouterTest methodsFor: 'tests' stamp: 'GC 11/11/2019 02:08:39'!
+	self should: [ self router route: self getRequest ] raise: RouteNotFound! !
+
+!RouterTest methodsFor: 'tests' stamp: 'GC 11/12/2019 19:18:02'!
 testWhenThereIsARoutingRuleForARequestPathItSucceeds
-	| sentRequest router handledRequest |
-	
-	router _ Router new.
-	sentRequest _ TestWebRequest to: '/home_page'.
+	| handledRequest |
 		
-	router handle: '/home_page' with: [ :aRequest | handledRequest _ aRequest ].
-	router route: sentRequest.
+	self router handle: self homePath with: [ :aRequest | handledRequest _ aRequest ].
+	self router route: self getRequest.
 	
-	self assert: sentRequest equals: handledRequest 
+	self assert: self getRequest equals: handledRequest 
 	! !
 
 !IrizarWebServer methodsFor: 'accessing' stamp: 'GC 11/9/2019 21:13:43'!
@@ -122,6 +157,16 @@ initialize
 
 	super initialize.
 	router _ Router new! !
+
+!IrizarWebServer methodsFor: 'routing' stamp: 'GC 11/12/2019 18:46:59'!
+handle: path verb: httpVerb with: anAction 
+
+	self router handle: path verb: httpVerb with: anAction ! !
+
+!IrizarWebServer class methodsFor: 'as yet unclassified' stamp: 'GC 11/15/2019 02:06:21'!
+instance
+
+	^ instance ifNil: [ instance _ self new ]! !
 
 !TestWebRequest methodsFor: 'accessing' stamp: 'GC 11/11/2019 02:33:36'!
 method
@@ -142,6 +187,14 @@ rawUrl
 url: aUrl
 
 	url _ aUrl! !
+
+!TestWebRequest methodsFor: 'as yet unclassified' stamp: 'GC 11/12/2019 19:26:36'!
+= anotherObject
+
+	^ anotherObject isMemberOf: self class :: 
+		and: [ anotherObject rawUrl  = self rawUrl 
+			and: [ anotherObject method = self method ] 
+		]! !
 
 !TestWebRequest class methodsFor: 'instance creation' stamp: 'GC 11/11/2019 02:11:19'!
 to: aUrl
